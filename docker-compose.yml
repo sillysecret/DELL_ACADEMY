@@ -1,0 +1,19 @@
+version: "3.5"
+
+services:
+  postgres:
+    container_name: dell_postgres
+    image: postgres:15
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: dell
+      POSTGRES_PASSWORD: dell
+      POSTGRES_DB: dell
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.7"
+          memory: "1.5GB"
