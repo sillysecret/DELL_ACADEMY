@@ -1,3 +1,4 @@
+
 use crate::{User, UserDTS, Aposta,ApostaDTS,Mega, MegaDTS};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use time::OffsetDateTime;
@@ -88,7 +89,7 @@ impl Repository {
      
     }
 
-    pub async fn create_adm(&self , mega:UserDTS) -> Result<User, sqlx::Error>{
+    pub async fn create_adm(&self , user:UserDTS) -> Result<User, sqlx::Error>{
         let newid = Uuid::now_v7();
         let auth = 1;
         
@@ -100,12 +101,31 @@ impl Repository {
             RETURNING ID, NOME, CPF
             ",
             newid,
-            mega.cpf,
-            mega.nome,
+            user.cpf,
+            user.nome,
             auth
         )
         .fetch_one(&self.pool)
         .await
+    }
+
+    pub async fn matchresult(&self , randvec:Vec<i32>, id:Uuid) -> Result<Vec<Aposta>, sqlx::Error>{
+        
+        
+        sqlx::query_as!(
+            Aposta,
+            "
+            SELECT *
+            FROM APOSTA
+            WHERE FK_MEGA_ID = $1
+            AND ARRAY(SELECT unnest($2::integer[])) <@ ANY(SELECT ARRAY_AGG(VEC) FROM APOSTA WHERE FK_MEGA_ID = $1)
+            ",
+            id,
+            &randvec
+        ).fetch_all(&self.pool).await
+        
+        
+        
     }
 
 }
