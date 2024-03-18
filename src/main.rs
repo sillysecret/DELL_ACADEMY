@@ -4,7 +4,7 @@ use axum::{
 use serde::{Serialize,Deserialize};
 use uuid::Uuid;
 use time::Date;
-use std::{env, vec};
+use std::{collections::hash_map::Iter, env, f32::consts::E, vec};
 use std::sync::Arc;
 use database::Repository;
 use rand::Rng;
@@ -49,7 +49,7 @@ pub struct MegaDTS{
     pub user_id: Uuid,
 }
 
-#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow,Debug)]
 pub struct Aposta{
     pub id: i32,
     pub fk_user_id: Uuid,
@@ -85,6 +85,8 @@ async fn main() {
         .route("/useradm", post(make_adm))
         .route("/startmega/:id", get(start_mega))
         .with_state(app_state);
+
+        //FAZER UM LAYER DE CORS
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -144,24 +146,47 @@ async fn make_aposta(State(localbd): State<AppState>,Json(payload): Json<ApostaD
 } 
 
 async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> impl IntoResponse {
-    // let mut vec = Vec::new();
+     let mut vec = Vec::new();
+     for _ in 0..5{
+          vec.push(rand::thread_rng().gen_range(1..50));
+     }
+     let mut retries = 0;    
+     const MAX_RETRIES: u32 = 25;
+     let mut vec_clone = vec.clone();
+     
+     loop{
+        print!("Tentativa: {}", retries);
+        println!("vec_clone: {:?}", vec_clone);
 
-    // for _ in 0..5{
-    //      vec.push(rand::thread_rng().gen_range(1..50));
-    // }
+        match localbd.matchresult(vec_clone.clone(), id).await {
+            Ok(apostas) => {               
+                if apostas.is_empty(){
+                    vec_clone.push(rand::thread_rng().gen_range(1..50));
+                    retries += 1;
 
-    //implementar funciona de sorteio 25 vezes
-        
-    let vec = vec![1,2,3,4,5];
-    
-    match localbd.matchresult(vec, id).await{
-        Ok(aposta) => {
-            Ok((StatusCode::CREATED, Json(aposta)))
-        },
-        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar aposta")))
+                    println!("apostas : {:?}", apostas);
+
+                    if retries >= MAX_RETRIES {
+                        println!("Número máximo de tentativas atingido!");
+                        break;
+                    }
+                }
+                else{
+                    return Ok((StatusCode::OK, Json(apostas)));   
+                }
+                
+            }
+            Err(e) => {
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar aposta vencedora")));
+                break;
+            }
+        }
     }
 
+    Err((StatusCode::NOT_FOUND, Json("nenhuma aposta encontrada")))
+
 }
+
 
 
 

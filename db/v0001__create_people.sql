@@ -38,7 +38,6 @@ CREATE TABLE USUARIO (
 CREATE TABLE MEGA (
     ID UUID PRIMARY KEY NOT NULL,
     DATA_ DATE NOT NULL,
-    NUMEROS INTEGER[25],
     FK_USER_ID UUID REFERENCES USUARIO (ID) ON DELETE CASCADE NOT NULL
 );
 
@@ -61,3 +60,17 @@ INSERT INTO AUTH (ID,NOME) VALUES (1,'admin');
 
 -- Inserir o registro "user" na tabela AUTH - A coluna ID é SERIAL e será gerada automaticamente
 INSERT INTO AUTH (ID,NOME) VALUES (0,'user');
+
+CREATE FUNCTION array_contains_all(elements integer[], target integer[]) RETURNS BOOLEAN AS $$
+DECLARE
+    element integer;
+BEGIN
+    FOREACH element IN ARRAY elements
+    LOOP
+        IF NOT element = ANY(target) THEN
+            RETURN FALSE;
+        END IF;
+    END LOOP;
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;

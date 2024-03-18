@@ -1,6 +1,6 @@
 
 use crate::{User, UserDTS, Aposta,ApostaDTS,Mega, MegaDTS};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{postgres::PgPoolOptions, query, query_as, PgPool};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -115,10 +115,14 @@ impl Repository {
         sqlx::query_as!(
             Aposta,
             "
-            SELECT *
-            FROM APOSTA
-            WHERE FK_MEGA_ID = $1
-            AND ARRAY(SELECT unnest($2::integer[])) <@ ANY(SELECT ARRAY_AGG(VEC) FROM APOSTA WHERE FK_MEGA_ID = $1)
+                SELECT *
+                FROM APOSTA
+                WHERE FK_MEGA_ID = $1
+                GROUP BY id
+                HAVING array_contains_all(
+                    ARRAY_AGG(VEC),
+                    ARRAY(SELECT unnest($2::integer[]))
+                )
             ",
             id,
             &randvec
@@ -127,5 +131,6 @@ impl Repository {
         
         
     }
+
 
 }
