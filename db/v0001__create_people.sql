@@ -27,7 +27,7 @@ CREATE TABLE AUTH (
 -- Criando a tabela "USER" - Renomeada para "USUARIO" devido ao nome reservado
 CREATE TABLE USUARIO (
     ID UUID PRIMARY KEY,
-    CPF VARCHAR(20) NOT NULL,
+    CPF VARCHAR(20) NOT NULL UNIQUE,
     NOME VARCHAR(100) NOT NULL,
     FK_AUTH_ID INTEGER NOT NULL,
     search TSVECTOR GENERATED ALWAYS AS(
@@ -60,6 +60,8 @@ INSERT INTO AUTH (ID,NOME) VALUES (1,'admin');
 
 -- Inserir o registro "user" na tabela AUTH - A coluna ID é SERIAL e será gerada automaticamente
 INSERT INTO AUTH (ID,NOME) VALUES (0,'user');
+
+INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID) VALUES ('018e4ef8-cd7c-7564-83f4-408710bb37ff', '00000000000', 'admin', 1);
 
 CREATE FUNCTION array_contains_all(elements integer[], target integer[]) RETURNS BOOLEAN AS $$
 DECLARE

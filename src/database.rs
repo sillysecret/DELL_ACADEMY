@@ -5,7 +5,11 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 
-
+fn remover_nao_digitos(texto: &str) -> String {
+    texto.chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect()
+}
 
 pub struct Repository{
     pool: PgPool, 
@@ -35,7 +39,7 @@ impl Repository {
             RETURNING ID, NOME, CPF
             ",
             newid,
-            user.cpf,
+            remover_nao_digitos(&user.cpf),
             user.nome,
             auth
         )
@@ -89,25 +93,25 @@ impl Repository {
      
     }
 
-    pub async fn create_adm(&self , user:UserDTS) -> Result<User, sqlx::Error>{
-        let newid = Uuid::now_v7();
-        let auth = 1;
+    // pub async fn create_adm(&self , user:UserDTS) -> Result<User, sqlx::Error>{
+    //     let newid = Uuid::now_v7();
+    //     let auth = 1;
         
-        sqlx::query_as!(
-            User,
-            "
-            INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID)
-            VALUES ($1, $2, $3, $4)
-            RETURNING ID, NOME, CPF
-            ",
-            newid,
-            user.cpf,
-            user.nome,
-            auth
-        )
-        .fetch_one(&self.pool)
-        .await
-    }
+    //     sqlx::query_as!(
+    //         User,
+    //         "
+    //         INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID)
+    //         VALUES ($1, $2, $3, $4)
+    //         RETURNING ID, NOME, CPF
+    //         ",
+    //         newid,
+    //         user.cpf,
+    //         user.nome,
+    //         auth
+    //     )
+    //     .fetch_one(&self.pool)
+    //     .await
+    // }
 
     pub async fn matchresult(&self , randvec:Vec<i32>, id:Uuid) -> Result<Vec<Aposta>, sqlx::Error>{
         

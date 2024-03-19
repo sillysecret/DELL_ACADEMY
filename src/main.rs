@@ -90,7 +90,7 @@ async fn main() {
         .route("/user",post(make_user))
         .route("/aposta",post(make_aposta))
         .route("/mega", post(make_mega))
-        .route("/useradm", post(make_adm))
+        // .route("/useradm", post(make_adm))
         .route("/startmega/:id", get(start_mega))
         .route("/loginuser", post(loginuser))
         .layer(cors)
@@ -126,19 +126,20 @@ async fn make_user(State(localbd): State<AppState>,Json(payload): Json<UserDTS>)
     
     match localbd.create_user(payload).await{
         Ok(user) => Ok((StatusCode::CREATED, Json(user))),
+        Err(sqlx::Error::Database(err)) if err.is_unique_violation() =>Err((StatusCode::UNPROCESSABLE_ENTITY,Json("Unnique violation"))),
         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar usuario"))) ,
         
     }
 }
 
-async fn make_adm(State(localbd): State<AppState>,Json(payload): Json<UserDTS>) -> impl IntoResponse {
-    match localbd.create_adm(payload).await{
-        Ok(user) => Ok((StatusCode::CREATED, Json(user))),
-        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar adm"))) 
-    }
+// async fn make_adm(State(localbd): State<AppState>,Json(payload): Json<UserDTS>) -> impl IntoResponse {
+//     match localbd.create_adm(payload).await{
+//         Ok(user) => Ok((StatusCode::CREATED, Json(user))),
+//         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar adm"))) 
+//     }
 
-    // dps tratar com cors
-}
+//     // dps tratar com cors
+// }
 
 async fn make_mega(State(localbd): State<AppState>,Json(payload): Json<MegaDTS>) -> impl IntoResponse {
     match localbd.create_mega(payload).await{
