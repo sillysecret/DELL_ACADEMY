@@ -1,6 +1,6 @@
 
 use crate::{User, UserDTS, Aposta,ApostaDTS,Mega, MegaDTS};
-use sqlx::{postgres::PgPoolOptions, query, query_as, PgPool};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -132,5 +132,17 @@ impl Repository {
         
     }
 
-
+    pub async fn login_user(&self , cpf:String) -> Result<User, sqlx::Error>{
+        sqlx::query_as!(
+            User,
+            "
+            SELECT ID, NOME, CPF
+            FROM USUARIO
+            WHERE CPF = $1
+            ",
+            cpf
+        )
+        .fetch_one(&self.pool)
+        .await
+    }
 }

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tela de Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <form class="form">
+            <h2>Bem-vindo!</h2>
+
+            <button type="button" onclick="redirecionarParaPagina1()">login</button>
+            <br>
+            <br>
+            <button type="button" onclick="redirecionarParaPagina2()">Cadastro</button>
+        </form>
+       
+    </div>
+</body>
+    <script>
+        function redirecionarParaPagina1() {
+            window.location.href = "login.html";
+            console.log("redirecionando para login.html");
+        }
+
+        function redirecionarParaPagina2() {
+            window.location.href = "cadastro.html";
+            console.log("redirecionando para cadastro.html");
+        }
+    </script>
+</html>

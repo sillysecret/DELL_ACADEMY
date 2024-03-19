@@ -1,13 +1,15 @@
 use axum::{
-    extract::{rejection::FailedToDeserializeForm, Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post}, Json, Router
+    extract::{Path, State}, http::StatusCode, response::IntoResponse, routing::{get, post}, Json, Router
 };
 use serde::{Serialize,Deserialize};
 use uuid::Uuid;
 use time::Date;
-use std::{collections::hash_map::Iter, env, f32::consts::E, vec};
+use std::env;
 use std::sync::Arc;
 use database::Repository;
 use rand::Rng;
+use tower_http::cors::{CorsLayer,Any};
+
 
 
 
@@ -77,6 +79,12 @@ async fn main() {
     let db = Repository::conn(port).await;
 
     let app_state = Arc::new(db);
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any)
+        .allow_private_network(true);
  
     let app = Router::new()
         .route("/user",post(make_user))
@@ -84,7 +92,10 @@ async fn main() {
         .route("/mega", post(make_mega))
         .route("/useradm", post(make_adm))
         .route("/startmega/:id", get(start_mega))
+        .route("/loginuser", post(loginuser))
+        .layer(cors)
         .with_state(app_state);
+        
 
         //FAZER UM LAYER DE CORS
 
@@ -92,6 +103,17 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
+
+
+
+async fn loginuser(State(localbd): State<AppState>,Json(payload): Json<UserDTS>) -> impl IntoResponse {
+    //arrumar cpf e colocar como unique
+    match localbd.login_user(payload.cpf).await{
+        Ok(user) => Ok((StatusCode::OK, Json(user))),
+        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("user não encontrado"))) 
+    }
+}
+
 
 async fn make_user(State(localbd): State<AppState>,Json(payload): Json<UserDTS>)-> impl IntoResponse{        
     if payload.nome.len() > 100{
