@@ -11,7 +11,7 @@ ALTER TEXT SEARCH CONFIGURATION pessoas ALTER MAPPING FOR hword, hword_part, wor
 
 CREATE SEQUENCE exemplo_id_seq START 1000;
 
--- Criando uma função para converter um array de inteiros em uma string
+
 CREATE OR REPLACE FUNCTION ARRAY_TO_STRING_IMMUTABLE(
   arr INTEGER[],
   sep TEXT
@@ -24,7 +24,7 @@ CREATE TABLE AUTH (
     NOME VARCHAR(100) NOT NULL
 );
 
--- Criando a tabela "USER" - Renomeada para "USUARIO" devido ao nome reservado
+
 CREATE TABLE USUARIO (
     ID UUID PRIMARY KEY,
     CPF VARCHAR(20) NOT NULL UNIQUE,
@@ -41,24 +41,20 @@ CREATE TABLE MEGA (
     FK_USER_ID UUID REFERENCES USUARIO (ID) ON DELETE CASCADE NOT NULL
 );
 
--- Criando um índice GIN na coluna 'search' da tabela "USUARIO" para suportar pesquisas de texto
+
 CREATE INDEX usuario_search_index ON USUARIO USING GIN(search);
 
--- Criando a tabela APOSTA
 CREATE TABLE APOSTA (
     ID INTEGER PRIMARY KEY DEFAULT nextval('exemplo_id_seq'),
-    VEC INTEGER[5] NOT NULL, -- Define um array de inteiros com 5 posições
+    VEC INTEGER[5] NOT NULL, -
     FK_USER_ID UUID NOT NULL,
     FK_MEGA_ID UUID NOT NULL,
     FOREIGN KEY (FK_USER_ID) REFERENCES USUARIO (ID) ON DELETE CASCADE,
     FOREIGN KEY (FK_MEGA_ID) REFERENCES MEGA (ID) ON DELETE CASCADE
 );
 
-
--- Inserir o registro "admin" na tabela AUTH - A coluna ID é SERIAL e será gerada automaticamente
 INSERT INTO AUTH (ID,NOME) VALUES (1,'admin');
 
--- Inserir o registro "user" na tabela AUTH - A coluna ID é SERIAL e será gerada automaticamente
 INSERT INTO AUTH (ID,NOME) VALUES (0,'user');
 
 INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID) VALUES ('018e4ef8-cd7c-7564-83f4-408710bb37ff', '00000000000', 'admin', 1);

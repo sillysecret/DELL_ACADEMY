@@ -66,6 +66,12 @@ pub struct ApostaDTS{
     pub vec: Vec<i32>,
 }
 
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+pub struct Frequencia {
+    pub numero: Option<i32>,
+    pub frequencia:Option<i64>,
+}
+
 
 
 #[tokio::main]
@@ -93,6 +99,8 @@ async fn main() {
         // .route("/useradm", post(make_adm))
         .route("/startmega/:id", get(start_mega))
         .route("/loginuser", post(loginuser))
+        .route("/analize/:id", get(get_nums_of_mega))
+        .route("/megas", get(get_megas))
         .layer(cors)
         .with_state(app_state);
         
@@ -208,6 +216,20 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
 
     Err((StatusCode::NOT_FOUND, Json("nenhuma aposta encontrada")))
 
+}
+
+async fn get_nums_of_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>)-> impl IntoResponse{
+    match localbd.get_frequent_numbers(id).await{
+        Ok(frequencia) => Ok((StatusCode::OK, Json(frequencia))),
+        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar frequencia"))) 
+    }
+}
+
+async fn get_megas(State(localbd): State<AppState>)-> impl IntoResponse{
+    match localbd.get_mega().await{
+        Ok(megas) => Ok((StatusCode::OK, Json(megas))),
+        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar megas"))) 
+    }
 }
 
 

@@ -1,5 +1,5 @@
 
-use crate::{User, UserDTS, Aposta,ApostaDTS,Mega, MegaDTS};
+use crate::{Aposta, ApostaDTS, Frequencia, Mega, MegaDTS, User, UserDTS};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -149,4 +149,37 @@ impl Repository {
         .fetch_one(&self.pool)
         .await
     }
+
+    pub async fn get_frequent_numbers(&self , id:Uuid) -> Result<Vec<Frequencia>, sqlx::Error>{
+        sqlx::query_as!(
+            Frequencia,
+            "
+            SELECT CAST(numero AS INTEGER) AS numero, COUNT(numero) AS frequencia
+            FROM (
+                SELECT UNNEST(VEC) AS numero
+                FROM APOSTA 
+                WHERE FK_MEGA_ID = $1
+            ) AS numeros_desagregados
+            GROUP BY numero
+            ORDER BY frequencia DESC
+            LIMIT 5;                
+            ",
+            id
+        ).fetch_all(&self.pool)
+        .await
+
+    } 
+
+    pub async fn get_mega(&self ) -> Result<Vec<Mega>, sqlx::Error>{
+        sqlx::query_as!(
+            Mega,
+            "
+            SELECT *
+            FROM MEGA
+            "
+        ).fetch_all(&self.pool)
+        .await
+    }
+
+
 }
