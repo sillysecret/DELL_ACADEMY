@@ -27,14 +27,14 @@
 <script>
     async function enviarDados() {
       var nome = document.getElementById("nome").value;
-      var cpf = document.getElementById("CPF").value;
+      var cpf = document.getElementById("cpf").value;
     
       const dados = {
         nome: nome,
         cpf: cpf
       };
     
-      console.log(JSON.stringify(dados));
+      
     
       const response = await fetch("http://localhost:3000/loginuser", {
         method: "POST",
@@ -43,13 +43,19 @@
           },
         body: JSON.stringify(dados)
       });
-      console.log(response);
       const data = await response.json();
       console.log(data);
+
     
-      if (response.ok && response.status === 200){
+      if (response.ok && response.status === 200 && data.fk_auth_id === 0){
+            localStorage.setItem("user", JSON.stringify(data));
             window.location.href = "apostas.html";
+      }else if(response.ok && response.status === 200 && data.fk_auth_id === 1){
+        localStorage.setItem("user", JSON.stringify(data));
+        window.location.href = "admin.html";
       }
+
+     
     
     
     }

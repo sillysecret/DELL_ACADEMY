@@ -11,7 +11,10 @@ use rand::Rng;
 use tower_http::cors::{CorsLayer,Any};
 
 
-
+//fazer endpont de consultar todas as apostas
+//adicionar sistema de senhas 
+//fazer tela de adm
+//adicionar campo de validacao mega(para ver se a mega esta ativa ou acabou)
 
 mod database;
 
@@ -30,6 +33,7 @@ pub struct User{
     pub id: Uuid,
     pub cpf: String,
     pub nome: String,
+    pub fk_auth_id: i32,
 }
 
 #[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
@@ -42,6 +46,7 @@ pub struct UserDTS{
 pub struct Mega{
     pub id: Uuid,
     pub data_: Date,
+    pub amount: i32,
     pub fk_user_id: Uuid,
 }
 
@@ -49,6 +54,7 @@ pub struct Mega{
 pub struct MegaDTS{
     pub aval: bool,
     pub user_id: Uuid,
+    pub amount: i32,
 }
 
 #[derive(Serialize,Clone,Deserialize,sqlx::FromRow,Debug)]
@@ -101,6 +107,7 @@ async fn main() {
         .route("/loginuser", post(loginuser))
         .route("/analize/:id", get(get_nums_of_mega))
         .route("/megas", get(get_megas))
+        .route("/getrecent", get(get_recenct_mega))
         .layer(cors)
         .with_state(app_state);
         
@@ -158,7 +165,7 @@ async fn make_mega(State(localbd): State<AppState>,Json(payload): Json<MegaDTS>)
 }
 
 async fn make_aposta(State(localbd): State<AppState>,Json(payload): Json<ApostaDTS>) -> impl IntoResponse {
-    
+    // verificar se a aposta ja foi feita com os memsmos numeros    
     // verifica o tamanho do vetor 
 
     if payload.vec.len() != 5 {
@@ -229,6 +236,13 @@ async fn get_megas(State(localbd): State<AppState>)-> impl IntoResponse{
     match localbd.get_mega().await{
         Ok(megas) => Ok((StatusCode::OK, Json(megas))),
         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar megas"))) 
+    }
+}
+
+async fn get_recenct_mega(State(localbd): State<AppState>)-> impl IntoResponse{
+    match localbd.get_recenct_mega().await{
+        Ok(mega) => Ok((StatusCode::OK, Json(mega))),
+        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar mega recente"))) 
     }
 }
 

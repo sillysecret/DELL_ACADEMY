@@ -18,17 +18,19 @@
                 <label for="cpf">CPF:</label>
                 <input  id="cpf" name="cpf" required>
             </div>
-            <button type="button" onclick="enviarDados()">logar</button>
+            <button type="button" onclick="enviarDadosCadastro()">Cadastrar</button>
         </form>
     </div>
 </body>
 
 
 <script>
-    async function enviarDados() {
+    async function enviarDadosCadastro() {
       var nome = document.getElementById("nome").value;
-      var cpf = document.getElementById("CPF").value;
-    
+      var cpf = document.getElementById("cpf").value;
+      
+      console.log(nome);
+      console.log(cpf);
       const dados = {
         nome: nome,
         cpf: cpf
@@ -47,8 +49,8 @@
       const data = await response.json();
       console.log(data);
     
-      if (response.ok && response.status === 200){
-            window.location.href = "apostas.html";
+      if (response.status === 200){
+            window.location.href = "index.html";
       }
     
     

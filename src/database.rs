@@ -36,7 +36,7 @@ impl Repository {
             "
             INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID)
             VALUES ($1, $2, $3, $4)
-            RETURNING ID, NOME, CPF
+            RETURNING ID, NOME, CPF, FK_AUTH_ID
             ",
             newid,
             remover_nao_digitos(&user.cpf),
@@ -77,12 +77,13 @@ impl Repository {
             sqlx::query_as!(
                 Mega,
                 "
-                INSERT INTO MEGA (ID, DATA_,FK_USER_ID)
-                VALUES ($1, $2, $3)
-                RETURNING ID, DATA_, FK_USER_ID
+                INSERT INTO MEGA (ID, DATA_,AMOUNT,FK_USER_ID)
+                VALUES ($1, $2, $3, $4)
+                RETURNING ID, DATA_,AMOUNT, FK_USER_ID
                 ",
                 newid,
                 formatted_time,
+                mega.amount,
                 mega.user_id
             )
             .fetch_one(&self.pool)
@@ -140,7 +141,7 @@ impl Repository {
         sqlx::query_as!(
             User,
             "
-            SELECT ID, NOME, CPF
+            SELECT ID, NOME, CPF,FK_AUTH_ID
             FROM USUARIO
             WHERE CPF = $1
             ",
@@ -175,10 +176,24 @@ impl Repository {
             Mega,
             "
             SELECT *
-            FROM MEGA
+            FROM MEGA 
             "
         ).fetch_all(&self.pool)
         .await
+    }
+
+    pub async fn get_recenct_mega(&self ) -> Result<Mega, sqlx::Error>{
+        sqlx::query_as!(
+            Mega,
+            "
+            SELECT *   
+            FROM MEGA 
+            ORDER BY DATA_ DESC
+            LIMIT 1
+            "
+        ).fetch_one(&self.pool)
+        .await
+
     }
 
 
