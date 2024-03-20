@@ -21,32 +21,71 @@
             </div>
 
             <div class="data-group scroll">
-                <label id ="apostas"><h2>vencedores:</h2></label>
-                    <h2 id="result"></h2><br>
-                </div>
-
-            <button onclick="Startmega()">Start mega</button>
+            <label id ="vencedores"><h2>vencedores:</h2></label>
+                <h2 id="result"></h2><br>
+            </div>
+            
+            <div class="data-group scroll">
+            <label id="Numeros sorteados"><h2>Numeros sorteados</h2></label>
+            <h2 id="numeros"></h2><br>
+            </div>
+            <button onclick="Startmega()">Start Mega</button>
+            <button onclick="formMega()">Make Mega</button>
+            <button onclick="Analyticsred()">Analytics</button>
         </div>
             
        
     </div>
 
     <script>
+        
+        function Analyticsred() {
+            window.location.href = 'analytics.html';
+        }
+
+        function formMega() {
+            window.location.href = 'makemega.html';
+        }
+        
+        
         async function Startmega(){
             const response = await fetch("http://localhost:3000/startmega/"+localStorage.getItem("idmega"), {
                 method: "GET",
                 timeout: 5000
             });
-
-            console.log(response);
+            
             const data = await response.json();
             console.log(data);
+            document.getElementById("numeros").innerText = data.vec_clone +"|tentativas:"+ data.retries;
+            
             if (response.ok) {
-                document.getElementById('result').textContent = JSON.stringify(data);
+                 document.getElementById('result').innerHTML = "";
+                    
+                    data.apostas.forEach(function(vencedor, index) {
+                    
+                    var apostaDiv = document.createElement('div');      
+
+                    var apostaStr = "Vencedor " + (index + 1) + ":\n";
+                    apostaStr += "Id: " + vencedor.id + "\n";
+                    apostaStr += "Nome: " + vencedor.user_username + "\n";
+                    apostaStr += "CPF: " + vencedor.user_cpf + "\n";
+                    apostaStr += "Vec: " + vencedor.vec + "\n";
+                    
+                   
+                    console.log(apostaStr);
+                    console.log(data);
+                    
+                    apostaDiv.textContent = apostaStr;
+                
+                    
+                    document.getElementById('result').appendChild(apostaDiv);
+                });
             }else{
-                document.getElementById('result').textContent = JSON.stringify(data);
+                document.getElementById('result').textContent = "sem vencedores";
             }
+            getapostas();
         }
+        
         
 
         async function fetchData() {
@@ -59,7 +98,8 @@
                     const data = await response.json();
                     
                     const retornoString = JSON.stringify(data);
-
+                    
+                    
                     parse = JSON.parse(retornoString);
                        
                     const id = parse.id;    
@@ -96,10 +136,9 @@
             const response = await fetch("http://localhost:3000/getallapostas/"+localStorage.getItem("idmega"), {
                 method: "GET",
             });
-            console.log("http://localhost:3000/getallapostas/"+localStorage.getItem("idmega"));
-            console.log(response);
+           
             const data = await response.json();
-            console.log(data);
+           
             if (response.ok) {
                 document.getElementById('response').innerHTML = "";
                     data.forEach(function(aposta, index) {
@@ -111,6 +150,7 @@
                     var apostaStr = "Aposta " + (index + 1) + ":\n";
                     apostaStr += "Id: " + aposta.id + "\n";
                     apostaStr += "Nome: " + aposta.user_username + "\n";
+                    apostaStr += "CPF: " + aposta.user_cpf + "\n";
                     apostaStr += "Valor: " + aposta.vec + "\n";
                     
                    

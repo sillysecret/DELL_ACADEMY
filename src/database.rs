@@ -123,19 +123,16 @@ impl Repository {
     }
 
 
-    pub async fn matchresult(&self , randvec:Vec<i32>, id:Uuid) -> Result<Vec<Aposta>, sqlx::Error>{
-        
-        
-
-        
+    pub async fn matchresult(&self , randvec:Vec<i32>, id:Uuid) -> Result<Vec<Apostaview>, sqlx::Error>{
         
         sqlx::query_as!(
-            Aposta,
+            Apostaview,
             "
-                SELECT *
-                FROM APOSTA
+                SELECT a.ID,a.FK_MEGA_ID,VEC,u.NOME as user_username,u.CPF as user_cpf
+                FROM APOSTA a
+                INNER JOIN USUARIO u ON a.FK_USER_ID = u.ID
                 WHERE FK_MEGA_ID = $1
-                GROUP BY id
+                GROUP BY user_username,user_cpf,a.ID,a.FK_MEGA_ID,VEC
                 HAVING array_contains_all(
                     ARRAY_AGG(VEC),
                     ARRAY(SELECT unnest($2::integer[]))
@@ -174,8 +171,7 @@ impl Repository {
                 WHERE FK_MEGA_ID = $1
             ) AS numeros_desagregados
             GROUP BY numero
-            ORDER BY frequencia DESC
-            LIMIT 5;                
+            ORDER BY frequencia DESC;                
             ",
             id
         ).fetch_all(&self.pool)
@@ -196,7 +192,7 @@ impl Repository {
         .await
     }
 
-    pub async fn get_recenct_mega(&self ) -> Result<Mega, sqlx::Error>{
+    pub async fn get_recenct_mega(&self) -> Result<Mega, sqlx::Error>{
         sqlx::query_as!(
             Mega,
             "
@@ -213,11 +209,10 @@ impl Repository {
         let _queryresult = sqlx::query!(
             "
             UPDATE MEGA
-            SET AVALIABLE = $2
+            SET AVALIABLE = FALSE
             WHERE ID = $1;
             ",
             uuid,
-            false
         )
         .execute(&self.pool)
         .await?;
@@ -229,7 +224,7 @@ impl Repository {
         sqlx::query_as!(
             Apostaview,
             "
-            SELECT a.ID,a.FK_MEGA_ID,VEC,u.NOME as user_username
+            SELECT a.ID,a.FK_MEGA_ID,VEC,u.NOME as user_username,u.CPF as user_cpf
             FROM APOSTA a
             INNER JOIN USUARIO u ON a.FK_USER_ID = u.ID
             WHERE a.FK_MEGA_ID = $1

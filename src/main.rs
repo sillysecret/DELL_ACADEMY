@@ -83,14 +83,20 @@ pub struct Frequencia {
     pub frequencia:Option<i64>,
 }
 
-#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow,Debug)]
 pub struct Apostaview{
     pub id: i32,
     pub fk_mega_id: Uuid,
     pub vec: Vec<i32>,
     pub user_username: String,
+    pub user_cpf:String,
 }
-
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+struct MegaResponse {
+    apostas: Vec<Apostaview>,
+    retries: u32,
+    vec_clone: Vec<i32>,
+}
 
 
 
@@ -124,7 +130,21 @@ async fn main() {
         .route("/getallapostas/:id", get(get_all_apostas))
         .layer(cors)
         .with_state(app_state);
-        
+
+//afazer       
+
+// c. a quantidade de apostas vencedoras
+// d. a lista de apostas vencedoras (ordenada alfabeticamente pelo nome dos
+// apostadores) ou uma mensagem de que não houve vencedores(verificar se esta ordenada)
+
+//feito
+// a. a lista de números sorteados
+// b. quantas rodadas de sorteio foram realizadas
+// e. uma lista de todos os números apostados, considerando todas as apostas,
+// ordenada do número mais escolhido ao menos escolhido. Ao lado de cada
+// número deverá haver a quantidade de apostas que contêm aquele número,
+// como no exemplo a seguir (se você quiser, poderá apresentar isso
+// graficamente):
 
         //FAZER UM LAYER DE CORS
 
@@ -232,16 +252,17 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
                 }
                 else{
                     //let _ =localbd.disable_mega(id).await;
-                    return Ok((StatusCode::OK, Json(apostas)));   
+                    return Ok((StatusCode::OK, Json(MegaResponse{apostas,retries,vec_clone})));  
                 }
             }
             Err(_e) => {
-                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar aposta vencedora")));
+                let apostas : Vec<Apostaview> = Vec::new();
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(MegaResponse{apostas,retries,vec_clone})));
             }
         }
     }
-
-    Err((StatusCode::OK, Json("nenhuma aposta encontrada")))
+    let apostas : Vec<Apostaview> = Vec::new();
+    Err((StatusCode::NOT_FOUND, Json(MegaResponse{apostas,retries,vec_clone})))
 
 }
 
