@@ -1,9 +1,8 @@
 version: "3.5"
-
 services:
   postgres:
+    image: postgres
     container_name: dell_postgres
-    image: postgres:15
     volumes:
       - ./db:/docker-entrypoint-initdb.d
     environment:

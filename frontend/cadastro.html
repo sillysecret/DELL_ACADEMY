@@ -36,7 +36,7 @@
         cpf: cpf
       };
     
-      console.log(JSON.stringify(dados));
+      
     
       const response = await fetch("http://localhost:3000/user", {
         method: "POST",
@@ -50,10 +50,11 @@
       console.log(data);
     
       if (response.ok){
-            window.location.href = "../index.html";
+            window.location.href = "login.html";
       }
+      
       if(response.status === 422){
-        alert("CPF ja cadastrado");
+          alert("CPF ja cadastrado");
       }
     
     

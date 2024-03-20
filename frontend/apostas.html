@@ -19,6 +19,10 @@
                 <h2 id="dataLabel"></h2><br>
                 <h2 id="amountLabel"></h2><br>
             </div>
+            <div class="data-group">
+                <h2 id="idwallet"></h2><br>
+            </div>
+
             <div class="numbers">
                 <input type="number" id="input1" name="input1" value="">
                 <input type="number" id="input2" name="input2" value="">
@@ -37,6 +41,12 @@
     </div>
     
     <script>
+
+        function showwallet(){
+            const user = localStorage.getItem("user");
+            const wallet = JSON.parse(user).wallet;
+            document.getElementById('idwallet').textContent = "Saldo: " + wallet;
+        }
 
         document.getElementById("submitButton").addEventListener("click", function(event) {
             event.preventDefault(); // Evita o comportamento padrão de envio do formulário
@@ -96,6 +106,7 @@
         
         document.addEventListener("DOMContentLoaded", function() {
             let id = fetchData();
+            showwallet();
         });
 
         async function enviarDados(e){

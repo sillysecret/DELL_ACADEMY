@@ -9,7 +9,7 @@ use std::sync::Arc;
 use database::Repository;
 use rand::Rng;
 use tower_http::cors::{CorsLayer,Any};
-
+use std::collections::HashSet;
 
 //fazer endpont de consultar todas as apostas
 //adicionar sistema de senhas 
@@ -250,8 +250,29 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
                     }
                 }
                 else{
-                    let _ =localbd.disable_mega(id).await;
-                    return Ok((StatusCode::OK, Json(MegaResponse{apostas,retries,vec_clone})));  
+                    let mut winners : HashSet<String> = HashSet::new();
+                    for aposta in &apostas{
+                        winners.insert(aposta.user_cpf.clone());
+                    }
+                   
+                    match localbd.get_amout(id).await {
+                        Ok(amout) => {
+                            let amout = amout as f64;
+                            let amout = amout/winners.len() as f64;
+                            for winner in winners{
+                                let _ = localbd.set_wallet(winner, amout).await;
+                            }
+                            let _ =localbd.disable_mega(id).await;
+                            return Ok((StatusCode::OK, Json(MegaResponse{apostas,retries,vec_clone})));
+                        }
+                        Err(_) => {
+                                let apostas : Vec<Apostaview> = Vec::new();
+                                return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(MegaResponse{apostas,retries,vec_clone})));
+                                }
+                        
+                    }
+
+              
                 }
             }
             Err(_e) => {
@@ -260,6 +281,7 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
             }
         }
     }
+    
     let apostas : Vec<Apostaview> = Vec::new();
     let _ =localbd.disable_mega(id).await;
     Err((StatusCode::NOT_FOUND, Json(MegaResponse{apostas,retries,vec_clone})))

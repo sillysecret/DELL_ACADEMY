@@ -234,5 +234,41 @@ impl Repository {
         .await
     }
 
+    pub async fn set_wallet(&self, cpf:String, amount:f64) -> Result<(), sqlx::Error> {
+        let _queryresult = sqlx::query!(
+            "
+            UPDATE USUARIO
+            SET WALLET = WALLET + $1
+            WHERE CPF = $2;
+            ",
+            amount,
+            cpf,
+        )
+        .execute(&self.pool)
+        .await?;
+        
+        Ok(())
+    }
 
-}
+    pub async fn get_amout(&self,id:Uuid) -> Result<i32,sqlx::Error>{
+        let mega =sqlx::query_as!(
+            Mega,
+            "
+            SELECT *
+            FROM MEGA
+            WHERE ID = $1
+            "
+            ,id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(mega.amount)
+
+    }
+    }
+
+
+
+
+
