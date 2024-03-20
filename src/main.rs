@@ -132,8 +132,7 @@ async fn main() {
         .with_state(app_state);
 
 //afazer       
-
-// c. a quantidade de apostas vencedoras
+//distribuir premios na wallet do user
 // d. a lista de apostas vencedoras (ordenada alfabeticamente pelo nome dos
 // apostadores) ou uma mensagem de que não houve vencedores(verificar se esta ordenada)
 
@@ -251,7 +250,7 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
                     }
                 }
                 else{
-                    //let _ =localbd.disable_mega(id).await;
+                    let _ =localbd.disable_mega(id).await;
                     return Ok((StatusCode::OK, Json(MegaResponse{apostas,retries,vec_clone})));  
                 }
             }
@@ -262,6 +261,7 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
         }
     }
     let apostas : Vec<Apostaview> = Vec::new();
+    let _ =localbd.disable_mega(id).await;
     Err((StatusCode::NOT_FOUND, Json(MegaResponse{apostas,retries,vec_clone})))
 
 }
