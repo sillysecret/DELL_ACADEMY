@@ -1,8 +1,10 @@
 
-use crate::{Aposta, ApostaDTS, Frequencia, Mega, MegaDTS, User, UserDTS};
+use crate::{Aposta, ApostaDTS, Frequencia, Mega, MegaDTS, User, UserDTS,Count,Apostaview};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use time::OffsetDateTime;
 use uuid::Uuid;
+
+
 
 
 fn remover_nao_digitos(texto: &str) -> String {
@@ -36,12 +38,12 @@ impl Repository {
             "
             INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID)
             VALUES ($1, $2, $3, $4)
-            RETURNING ID, NOME, CPF, FK_AUTH_ID
+            RETURNING ID, NOME, CPF, FK_AUTH_ID,WALLET
             ",
             newid,
             remover_nao_digitos(&user.cpf),
             user.nome,
-            auth
+            auth,
         )
         .fetch_one(&self.pool)
         .await
@@ -51,19 +53,44 @@ impl Repository {
 
     pub async fn create_aposta(&self , newaposta:ApostaDTS) -> Result<Aposta, sqlx::Error>{    
 
-
-        sqlx::query_as!(
-            Aposta,
+        let test = sqlx::query_as!(
+            Count,
             "
-            INSERT INTO APOSTA (FK_USER_ID, FK_MEGA_ID, VEC)
-            VALUES ($1, $2, $3)
-            RETURNING ID, FK_USER_ID, FK_MEGA_ID, VEC
+            SELECT COUNT(*)
+            FROM APOSTA
+            WHERE FK_USER_ID = $1
+            AND VEC = $2
+            AND FK_MEGA_ID = $3;
+
             ",
             newaposta.fk_user_id,
-            newaposta.fk_mega_id,
-            &newaposta.vec
+            &newaposta.vec,
+            newaposta.fk_mega_id
         ).fetch_one(&self.pool)
-        .await
+        .await?;
+
+        if let Some(value) = test.count {
+            if value >= 1 {
+                return Err(sqlx::Error::WorkerCrashed);
+            }
+        }
+       
+        sqlx::query_as!(
+                Aposta,
+                "
+                INSERT INTO APOSTA (FK_USER_ID, FK_MEGA_ID, VEC)
+                VALUES ($1, $2, $3)
+                RETURNING ID, FK_USER_ID, FK_MEGA_ID, VEC
+                ",
+                newaposta.fk_user_id,
+                newaposta.fk_mega_id,
+                &newaposta.vec
+            ).fetch_one(&self.pool)
+            .await
+         
+
+        
+        
 
 
     }
@@ -77,14 +104,15 @@ impl Repository {
             sqlx::query_as!(
                 Mega,
                 "
-                INSERT INTO MEGA (ID, DATA_,AMOUNT,FK_USER_ID)
-                VALUES ($1, $2, $3, $4)
-                RETURNING ID, DATA_,AMOUNT, FK_USER_ID
+                INSERT INTO MEGA (ID, DATA_,AMOUNT,FK_USER_ID,AVALIABLE)
+                VALUES ($1, $2, $3, $4,$5)
+                RETURNING ID, DATA_,AMOUNT, FK_USER_ID,avaliable
                 ",
                 newid,
                 formatted_time,
                 mega.amount,
-                mega.user_id
+                mega.user_id,
+                true
             )
             .fetch_one(&self.pool)
             .await
@@ -94,27 +122,11 @@ impl Repository {
      
     }
 
-    // pub async fn create_adm(&self , user:UserDTS) -> Result<User, sqlx::Error>{
-    //     let newid = Uuid::now_v7();
-    //     let auth = 1;
-        
-    //     sqlx::query_as!(
-    //         User,
-    //         "
-    //         INSERT INTO USUARIO (ID, CPF, NOME, FK_AUTH_ID)
-    //         VALUES ($1, $2, $3, $4)
-    //         RETURNING ID, NOME, CPF
-    //         ",
-    //         newid,
-    //         user.cpf,
-    //         user.nome,
-    //         auth
-    //     )
-    //     .fetch_one(&self.pool)
-    //     .await
-    // }
 
     pub async fn matchresult(&self , randvec:Vec<i32>, id:Uuid) -> Result<Vec<Aposta>, sqlx::Error>{
+        
+        
+
         
         
         sqlx::query_as!(
@@ -141,7 +153,7 @@ impl Repository {
         sqlx::query_as!(
             User,
             "
-            SELECT ID, NOME, CPF,FK_AUTH_ID
+            SELECT ID, NOME, CPF,FK_AUTH_ID,WALLET
             FROM USUARIO
             WHERE CPF = $1
             ",
@@ -171,14 +183,16 @@ impl Repository {
 
     } 
 
-    pub async fn get_mega(&self ) -> Result<Vec<Mega>, sqlx::Error>{
+    pub async fn get_mega(&self) -> Result<Count, sqlx::Error> {
         sqlx::query_as!(
-            Mega,
+            Count,
             "
-            SELECT *
-            FROM MEGA 
+            SELECT COUNT(*)
+            FROM MEGA
+            WHERE AVALIABLE = TRUE
             "
-        ).fetch_all(&self.pool)
+        )
+        .fetch_one(&self.pool)
         .await
     }
 
@@ -188,12 +202,41 @@ impl Repository {
             "
             SELECT *   
             FROM MEGA 
-            ORDER BY DATA_ DESC
-            LIMIT 1
+            WHERE AVALIABLE = TRUE
             "
         ).fetch_one(&self.pool)
         .await
 
+    }   
+
+    pub async fn disable_mega(&self, uuid: Uuid) -> Result<(), sqlx::Error> {
+        let _queryresult = sqlx::query!(
+            "
+            UPDATE MEGA
+            SET AVALIABLE = $2
+            WHERE ID = $1;
+            ",
+            uuid,
+            false
+        )
+        .execute(&self.pool)
+        .await?;
+        
+        Ok(())
+    }
+
+    pub async fn get_all_apostas(&self,id:Uuid) -> Result<Vec<Apostaview>, sqlx::Error>{
+        sqlx::query_as!(
+            Apostaview,
+            "
+            SELECT a.ID,a.FK_MEGA_ID,VEC,u.NOME as user_username
+            FROM APOSTA a
+            INNER JOIN USUARIO u ON a.FK_USER_ID = u.ID
+            WHERE a.FK_MEGA_ID = $1
+            ",
+            id
+        ).fetch_all(&self.pool)
+        .await
     }
 
 

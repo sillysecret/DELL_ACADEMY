@@ -26,13 +26,17 @@ time::serde::format_description!(date_format, Date, "[year]-[month]-[day]");
 pub struct Querysearch{
     pub query: String
 }
-
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+pub struct Count{
+    pub count: Option<i64>,
+}
 
 #[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
 pub struct User{
     pub id: Uuid,
     pub cpf: String,
     pub nome: String,
+    pub wallet: f64,
     pub fk_auth_id: i32,
 }
 
@@ -47,6 +51,7 @@ pub struct Mega{
     pub id: Uuid,
     pub data_: Date,
     pub amount: i32,
+    pub avaliable: bool,
     pub fk_user_id: Uuid,
 }
 
@@ -78,6 +83,15 @@ pub struct Frequencia {
     pub frequencia:Option<i64>,
 }
 
+#[derive(Serialize,Clone,Deserialize,sqlx::FromRow)]
+pub struct Apostaview{
+    pub id: i32,
+    pub fk_mega_id: Uuid,
+    pub vec: Vec<i32>,
+    pub user_username: String,
+}
+
+
 
 
 #[tokio::main]
@@ -102,12 +116,12 @@ async fn main() {
         .route("/user",post(make_user))
         .route("/aposta",post(make_aposta))
         .route("/mega", post(make_mega))
-        // .route("/useradm", post(make_adm))
         .route("/startmega/:id", get(start_mega))
         .route("/loginuser", post(loginuser))
         .route("/analize/:id", get(get_nums_of_mega))
         .route("/megas", get(get_megas))
         .route("/getrecent", get(get_recenct_mega))
+        .route("/getallapostas/:id", get(get_all_apostas))
         .layer(cors)
         .with_state(app_state);
         
@@ -147,16 +161,20 @@ async fn make_user(State(localbd): State<AppState>,Json(payload): Json<UserDTS>)
     }
 }
 
-// async fn make_adm(State(localbd): State<AppState>,Json(payload): Json<UserDTS>) -> impl IntoResponse {
-//     match localbd.create_adm(payload).await{
-//         Ok(user) => Ok((StatusCode::CREATED, Json(user))),
-//         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar adm"))) 
-//     }
-
-//     // dps tratar com cors
-// }
-
 async fn make_mega(State(localbd): State<AppState>,Json(payload): Json<MegaDTS>) -> impl IntoResponse {
+    
+    match localbd.get_mega().await{
+        Ok(count) => {
+            if let Some(value) = count.count {
+                if value >= 1 {
+                    return Err((StatusCode::BAD_REQUEST, Json("Mega ja criada")));
+                }
+            } 
+        }
+        Err(_) => return Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar megas")))
+
+    }
+    
     match localbd.create_mega(payload).await{
         Ok(mega) => Ok((StatusCode::CREATED, Json(mega))),
         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar mega"))) 
@@ -166,7 +184,6 @@ async fn make_mega(State(localbd): State<AppState>,Json(payload): Json<MegaDTS>)
 
 async fn make_aposta(State(localbd): State<AppState>,Json(payload): Json<ApostaDTS>) -> impl IntoResponse {
     // verificar se a aposta ja foi feita com os memsmos numeros    
-    // verifica o tamanho do vetor 
 
     if payload.vec.len() != 5 {
         return Err((StatusCode::BAD_REQUEST, Json("A aposta deve conter 5 numeros")));
@@ -176,9 +193,16 @@ async fn make_aposta(State(localbd): State<AppState>,Json(payload): Json<ApostaD
     if payload.vec.iter().any(|&x| x > 50 || x < 1) {
         return Err((StatusCode::BAD_REQUEST, Json("Os numeros devem estar entre 1 e 50")));
     }
+    
+    //verificar se o user mandou numeros repetidos no vec
+    if payload.vec.iter().any(|&x| payload.vec.iter().filter(|&y| *y == x).count() > 1){
+        return Err((StatusCode::BAD_REQUEST, Json("Os numeros devem ser diferentes")));
+    }
+
    
     match localbd.create_aposta(payload).await{
         Ok(aposta) => Ok((StatusCode::CREATED, Json(aposta))),
+        Err(sqlx::Error::WorkerCrashed) =>Err((StatusCode::UNPROCESSABLE_ENTITY,Json("aposta ja feita com esses numero"))),
         Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao criar aposta"))) 
     }
 } 
@@ -195,33 +219,29 @@ async fn start_mega(State(localbd): State<AppState>,Path(id): Path<Uuid>) -> imp
      loop{
         print!("Tentativa: {}", retries);
         println!("vec_clone: {:?}", vec_clone);
-
         match localbd.matchresult(vec_clone.clone(), id).await {
             Ok(apostas) => {               
                 if apostas.is_empty(){
-                    vec_clone.push(rand::thread_rng().gen_range(1..50));
+                    add_randown_number_not_contained(&mut vec_clone);
                     retries += 1;
-
                     println!("apostas : {:?}", apostas);
-
                     if retries >= MAX_RETRIES {
                         println!("Número máximo de tentativas atingido!");
                         break;
                     }
                 }
                 else{
+                    //let _ =localbd.disable_mega(id).await;
                     return Ok((StatusCode::OK, Json(apostas)));   
                 }
-                
             }
-            Err(e) => {
+            Err(_e) => {
                 return Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar aposta vencedora")));
-                break;
             }
         }
     }
 
-    Err((StatusCode::NOT_FOUND, Json("nenhuma aposta encontrada")))
+    Err((StatusCode::OK, Json("nenhuma aposta encontrada")))
 
 }
 
@@ -246,7 +266,21 @@ async fn get_recenct_mega(State(localbd): State<AppState>)-> impl IntoResponse{
     }
 }
 
+async fn get_all_apostas(State(localbd): State<AppState>,Path(id): Path<Uuid>)-> impl IntoResponse{
+    match localbd.get_all_apostas(id).await{
+        Ok(apostas) => Ok((StatusCode::OK, Json(apostas))),
+        Err(_) =>Err((StatusCode::INTERNAL_SERVER_ERROR, Json("Erro ao buscar apostas"))) 
+    }
+}
 
+fn add_randown_number_not_contained(vec: &mut Vec<i32>){
+    let mut rng = rand::thread_rng();
+    let mut number = rng.gen_range(1..50);
+    while vec.contains(&number){
+        number = rng.gen_range(1..50);
+    }
+    vec.push(number);
+}
 
 
 

@@ -121,6 +121,8 @@
                 document.getElementById('response').textContent = "Aposta realizada com sucesso!"+ JSON.stringify(data);
                 //localStorage.setItem("apostas", JSON.stringify(data));
                 //window.location.href = "apostas.html";
+            }else{
+                document.getElementById('response').textContent = JSON.stringify(data);
             }
         }
     </script>

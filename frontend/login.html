@@ -18,14 +18,14 @@
                 <label for="cpf">CPF:</label>
                 <input  id="cpf" name="cpf" required>
             </div>
-            <button type="button" onclick="enviarDados()">logar</button>
+            <button type="button" onclick="enviarDadosLogin()">logar</button>
         </form>
     </div>
 </body>
 
 
 <script>
-    async function enviarDados() {
+    async function enviarDadosLogin() {
       var nome = document.getElementById("nome").value;
       var cpf = document.getElementById("cpf").value;
     
@@ -45,7 +45,7 @@
       });
       const data = await response.json();
       console.log(data);
-
+      
     
       if (response.ok && response.status === 200 && data.fk_auth_id === 0){
             localStorage.setItem("user", JSON.stringify(data));

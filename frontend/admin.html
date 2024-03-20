@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="show">
+            <div class="data-group scroll">
+                <h2>Dados da Mega:</h2>
+                <h2 id="idLabel"></h2><br>
+                <h2 id="dataLabel"></h2><br>
+                <h2 id="amountLabel"></h2><br>
+            </div>
+            <div class="data-group scroll">
+            <label id ="apostas"><h2>Apostas:</h2></label>
+                <h2 id="response"></h2><br>
+            </div>
+
+            <div class="data-group scroll">
+                <label id ="apostas"><h2>vencedores:</h2></label>
+                    <h2 id="result"></h2><br>
+                </div>
+
+            <button onclick="Startmega()">Start mega</button>
+        </div>
+            
+       
+    </div>
+
+    <script>
+        async function Startmega(){
+            const response = await fetch("http://localhost:3000/startmega/"+localStorage.getItem("idmega"), {
+                method: "GET",
+                timeout: 5000
+            });
+
+            console.log(response);
+            const data = await response.json();
+            console.log(data);
+            if (response.ok) {
+                document.getElementById('result').textContent = JSON.stringify(data);
+            }else{
+                document.getElementById('result').textContent = JSON.stringify(data);
+            }
+        }
+        
+
+        async function fetchData() {
+            try {
+                const response = await fetch("http://localhost:3000/getrecent", {
+                    method: "GET"
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    const retornoString = JSON.stringify(data);
+
+                    parse = JSON.parse(retornoString);
+                       
+                    const id = parse.id;    
+                    
+                    const data_ = new Date(parse.data_[0], 0); 
+                    const amount = parse.amount;
+                    const fk_user_id = parse.fk_user_id;
+                    
+                    
+                    const idLabel = document.getElementById('idLabel');
+                    const dataLabel = document.getElementById('dataLabel');
+                    const amountLabel = document.getElementById('amountLabel');
+                    const fkUserIdLabel = document.getElementById('fkUserIdLabel');
+                    // Criar uma nova data
+                     // O segundo parâmetro 0 representa o primeiro mês (janeiro)
+                    // Definir o dia do ano
+                    data_.setDate(parse.data_[1]);
+                    idLabel.textContent = "ID: " + id;
+                    dataLabel.textContent = "Data: "+ data_.toLocaleDateString();
+                    amountLabel.textContent = "Amount: " + amount;
+                    
+                    return id;
+
+                    
+                } else {
+                    console.error('Erro ao obter dados:', response.status);
+                }
+            } catch (error) {
+                console.error('Erro ao processar a solicitação:', error);
+            }
+        }
+
+        async function getapostas(){
+            const response = await fetch("http://localhost:3000/getallapostas/"+localStorage.getItem("idmega"), {
+                method: "GET",
+            });
+            console.log("http://localhost:3000/getallapostas/"+localStorage.getItem("idmega"));
+            console.log(response);
+            const data = await response.json();
+            console.log(data);
+            if (response.ok) {
+                document.getElementById('response').innerHTML = "";
+                    data.forEach(function(aposta, index) {
+                    
+                    var apostaDiv = document.createElement('div');
+                    
+                
+                    
+                    var apostaStr = "Aposta " + (index + 1) + ":\n";
+                    apostaStr += "Id: " + aposta.id + "\n";
+                    apostaStr += "Nome: " + aposta.user_username + "\n";
+                    apostaStr += "Valor: " + aposta.vec + "\n";
+                    
+                   
+                
+                    
+                    apostaDiv.textContent = apostaStr;
+                
+                    
+                    document.getElementById('response').appendChild(apostaDiv);
+                });
+            }else{
+                document.getElementById('response').textContent = JSON.stringify(data);
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function(){
+            
+            fetchData().then(id => {
+                localStorage.setItem("idmega", id);
+                getapostas();
+            }).catch(error => {
+                console.error('Erro ao buscar e definir dados:', error);
+            });
+
+        });
+
+
+    </script>
+</html>
