@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="show">
+
+            <div class="input-group">
+                <label id="dados"><h2>Dados da Mega:</h2></label>
+                
+            </div>
+            <div class="data-group">
+                <h2 id="idLabel"></h2><br>
+                <h2 id="dataLabel"></h2><br>
+                <h2 id="amountLabel"></h2><br>
+            </div>
+            <div class="data-group">
+                <h2 id="idwallet"></h2><br>
+            </div>
+
+            <div class="numbers">
+                <input type="number" id="input1" name="input1" value="">
+                <input type="number" id="input2" name="input2" value="">
+                <input type="number" id="input3" name="input3" value="">
+                <input type="number" id="input4" name="input4" value="">
+                <input type="number" id="input5" name="input5" value="">
+            </div>
+            <button onclick="gerarapostanumber()">Gerar Aposta Surpresa</button>
+            <button id="submitButton">Enviar</button>
+            <div class="data-group">
+                <h2 id="response"></h2><br>
+            </div>
+        </div>
+        
+        
+    </div>
+    
+    <script>
+
+        function showwallet(){
+            const user = localStorage.getItem("user");
+            const wallet = JSON.parse(user).wallet;
+            document.getElementById('idwallet').textContent = "Saldo: " + wallet;
+        }
+
+        document.getElementById("submitButton").addEventListener("click", function(event) {
+            event.preventDefault(); // Evita o comportamento padrão de envio do formulário
+            enviarDados(event); // Chama a função enviarDados
+        });
+
+        function gerarapostanumber() {
+            document.getElementById("input1").value = parseInt(Math.floor(Math.random()*50));
+            document.getElementById("input2").value = parseInt(Math.floor(Math.random()*50));
+            document.getElementById("input3").value = parseInt(Math.floor(Math.random()*50));
+            document.getElementById("input4").value = parseInt(Math.floor(Math.random()*50));
+            document.getElementById("input5").value = parseInt(Math.floor(Math.random()*50));
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch("http://localhost:3000/getrecent", {
+                    method: "GET"
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    const retornoString = JSON.stringify(data);
+
+                    parse = JSON.parse(retornoString);
+                       
+                    const id = parse.id;    
+                    
+                    const data_ = new Date(parse.data_[0], 0); 
+                    const amount = parse.amount;
+                    const fk_user_id = parse.fk_user_id;
+                    
+                    
+                    const idLabel = document.getElementById('idLabel');
+                    const dataLabel = document.getElementById('dataLabel');
+                    const amountLabel = document.getElementById('amountLabel');
+                    const fkUserIdLabel = document.getElementById('fkUserIdLabel');
+                    // Criar uma nova data
+                     // O segundo parâmetro 0 representa o primeiro mês (janeiro)
+                    // Definir o dia do ano
+                    data_.setDate(parse.data_[1]);
+                    idLabel.textContent = "ID: " + id;
+                    dataLabel.textContent = "Data: "+ data_.toLocaleDateString();
+                    amountLabel.textContent = "Amount: " + amount;
+                    
+                    return id;
+
+                    
+                } else {
+                    console.error('Erro ao obter dados:', response.status);
+                }
+            } catch (error) {
+                console.error('Erro ao processar a solicitação:', error);
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            let id = fetchData();
+            showwallet();
+        });
+
+        async function enviarDados(e){
+            e.preventDefault();
+            const input1 = document.getElementById("input1").value;
+            const input2 = document.getElementById("input2").value;
+            const input3 = document.getElementById("input3").value;
+            const input4 = document.getElementById("input4").value;
+            const input5 = document.getElementById("input5").value;
+            
+            const user = localStorage.getItem("user");
+            
+            const iduser = JSON.parse(user).id; 
+            const idmega = await fetchData();
+            const vec = [parseInt(input1),parseInt(input2),parseInt(input3),parseInt(input4),parseInt(input5)];
+            
+            const dados ={
+                fk_user_id: iduser,
+                fk_mega_id: idmega,
+                vec: vec
+            }
+
+            console.log(JSON.stringify(dados));
+            
+            const response = await fetch("http://localhost:3000/aposta", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+               body: JSON.stringify(dados)
+            });
+            console.log(response);
+            const data = await response.json();
+            console.log(data);
+            if (response.ok) {
+
+                document.getElementById('response').textContent = "Aposta realizada com sucesso!"+ JSON.stringify(data);
+                //localStorage.setItem("apostas", JSON.stringify(data));
+                //window.location.href = "apostas.html";
+            }else{
+                document.getElementById('response').textContent = JSON.stringify(data);
+            }
+        }
+    </script>
+
+</body>
+</html>

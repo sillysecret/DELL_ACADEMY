@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tela de Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <form class="form">
+            <h2>Cadastre-se</h2>
+            <div class="input-group">
+                <label for="nome">Nome de usuário:</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            <div class="input-group">
+                <label for="cpf">CPF:</label>
+                <input  id="cpf" name="cpf" required>
+            </div>
+            <button type="button" onclick="enviarDadosCadastro()">Cadastrar</button>
+        </form>
+    </div>
+</body>
+
+
+<script>
+    async function enviarDadosCadastro() {
+      var nome = document.getElementById("nome").value;
+      var cpf = document.getElementById("cpf").value;
+      
+      console.log(nome);
+      console.log(cpf);
+      const dados = {
+        nome: nome,
+        cpf: cpf
+      };
+    
+      
+    
+      const response = await fetch("http://localhost:3000/user", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+          },
+        body: JSON.stringify(dados)
+      });
+      console.log(response);
+      const data = await response.json();
+      console.log(data);
+    
+      if (response.ok){
+            window.location.href = "login.html";
+      }
+      
+      if(response.status === 422){
+          alert("CPF ja cadastrado");
+      }
+    
+    
+    }
+    </script>
+</html>
+

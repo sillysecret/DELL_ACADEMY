@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tela de Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form">
+            <h2>Abrir Mega</h2>
+            <div class="input-group">
+            </div>
+            <div class="input-group">
+                <label for="Premio">Premio:</label>
+                <input  id="Premio" name="Premio" required>
+            </div>
+            <button type="button" onclick="enviarDadosMega()">Enviar</button>
+        </div>
+            
+    </div>
+</body>
+
+
+<script>
+async function enviarDadosMega() {
+      
+      var Premio = document.getElementById("Premio").value;
+      const user = localStorage.getItem("user");
+            
+    const iduser = JSON.parse(user).id; 
+      const dados = {
+        aval: true,
+        user_id: iduser,
+        amount: parseInt(Premio),
+
+      };
+    
+      console.log(dados);
+      
+    
+      const response = await fetch("http://localhost:3000/mega", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+          },
+        body: JSON.stringify(dados)
+      });
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok){
+         window.location.href = "admin.html";
+      }else if(!response.ok){
+            alert("Mega ja criada"); 
+      }
+    }
+    </script>
+</html>

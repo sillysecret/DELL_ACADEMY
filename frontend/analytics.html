@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apostas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="show">
+            
+            <div class="data-group scroll">
+            <label id ="apostas"><h2>Dados:</h2></label>
+                <h2 id="response"></h2><br>
+            </div>
+
+        </div>
+            
+       
+    </div>
+    <script>
+        async function getanalytics(){
+            const response = await fetch("http://localhost:3000/analize/"+localStorage.getItem("idmega"), {
+                method: "GET",
+            });
+            console.log("http://localhost:3000/analize/"+localStorage.getItem("idmega"));
+            console.log(response);
+            const data = await response.json();
+            console.log(data);
+            
+            if (response.ok) {
+                document.getElementById('response').innerHTML = "";
+                    data.forEach(function(num, index) {
+                    
+                    var apostaDiv = document.createElement('div');
+                    var apostaStr = "";
+                    apostaStr += "numero: " + num.numero + "\n";
+                    apostaStr += "frequencia: " + num.frequencia + "\n";
+                    apostaDiv.textContent = apostaStr;
+                
+                    
+                    document.getElementById('response').appendChild(apostaDiv);
+                });
+            }else{
+                document.getElementById('response').textContent = JSON.stringify(data);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            getanalytics();
+        });
+    </script>
+
+<html>
